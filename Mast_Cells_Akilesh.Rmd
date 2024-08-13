@@ -8,7 +8,7 @@ editor_options:
     wrap: 72
 ---
 # Loading R Packages
-# First, load these packages, since all of them are required to execute further steps. If you can't load them / are missing one, please use install.packages() to re install or download them, and then run the code. Note that Seurat requires specific versions to work correctly; we typically use v.4.4.0, but the latest version (5.1.0) could also work. 
+#First, load these packages, since all of them are required to execute further steps. If you can't load them / are missing one, please use install.packages() to re install or download them, and then run the code. Note that Seurat requires specific versions to work correctly; we typically use v.4.4.0, but the latest version (5.1.0) could also work. 
 ```{r, }
 suppressMessages(library(mclust))
 suppressMessages(library(MatrixExtra))
