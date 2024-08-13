@@ -8,8 +8,8 @@ editor_options:
     wrap: 72
 ---
 # Loading R Packages
-```{r, }
 #First, load these packages, since all of them are required to execute further steps. If you can't load them / are missing one, please use install.packages() to re install or download them, and then run the code. Note that Seurat requires specific versions to work correctly; we typically use v.4.4.0, but the latest version (5.1.0) could also work. 
+```{r, }
 suppressMessages(library(mclust))
 suppressMessages(library(MatrixExtra))
 suppressMessages(library(ggplot2))
@@ -40,8 +40,8 @@ suppressMessages(library(tidyr))
 
 
 # Loading Seurat Object (in this case, reharm_SCT_Jun18_small)
-```{r}
 #Load the seurat object that contains the single cell data obtained from samples. A seurat object that contains the original data of the donors, along with cell types identified, diabetic status, etc. Load the metadata to look at all information contained in this seurat object in various categories.
+```{r}
 reharm_SCT_2024Jun18_small
 reharm_SCT_2024Jun18_small <- readRDS("~/AS/objects/reharm_SCT_2024Jun18_small.rds")
 
@@ -50,16 +50,16 @@ reharm_SCT_2024Jun18_small@meta.data
 ```
 
 # Viewing Cell Types in Seurat Objects
-```{r}
 #We are interested in viewing different cell types, so we use Idents() and levels(). This shows us different cell types associated with endocrine and inflammatory processes such as alpha, beta, delta-gamma, macrophages, mast cells, etc. 
+```{r}
 Idents(reharm_SCT_2024Jun18_small) <- "cell_type"
 levels(reharm_SCT_2024Jun18_small)
 ```
 
 
 # Deleting Cell Types Not Relevant to Dataset
-```{r}
 #We view the cell types present in our large seurat object. We see that there are cell types associated with low quality, and it would be beneficial to the dataset if we removed them. To do this, we follow the code below. 
+```{r}
 levels_low_quality_cells_remove <- c("LowQuality_Endocrine", "LowQuality_Endothelial", "LowQuality_Exo", "LowQuality")
 meta_data <- reharm_SCT_2024Jun18_small@meta.data
 meta_data$cell_type <- droplevels(meta_data$cell_type, exclude = levels_low_quality_cells_remove)
@@ -69,29 +69,29 @@ print(levels(reharm_SCT_2024Jun18_small@meta.data$cell_type))
 
 
 # Visualizing Cell Types Using Dimensional Plots.
-```{r}
 #Now that we have removed low quality cell types, we re-construct a DimPlot with an updated registry of cell types for our reference. 
+```{r}
 DimPlot(reharm_SCT_2024Jun18_small, reduction = "umap")+ggtitle("All Cell Types")
 ```
 
 
 # Subsetting Cells of Interest from Seurat Object
-```{r}
 #Now, we need to make a subset from this data that contains only mast cells, because we are interested in characterizing mast cells in diabetic patients. This generates a new seurat object called mast_cells_cluster. If you want to subset some other type of cells, use the same syntax but edit to include your cell type instead. 
+```{r}
 mast_cells_cluster <- subset(reharm_SCT_2024Jun18_small, idents = "Mast")
 levels(mast_cells_cluster)
 ```
 
 # Seurat Clusters and How to View Them
-```{r}
 #Within mast cells, we need to view the different clusters that have been generated under this seurat object. Seurat clusters are usually named 1, 2, 3, etc. that are used to cluster the cells together for more easier organization. 
+```{r}
 Idents(mast_cells_cluster) <- "seurat_clusters"
 levels(mast_cells_cluster)
 ```
 
 # Single Cell RNA Sequencing of Seurat Clusters
-```{r}
 #Now, it's time to prepare this data for scRNA seq analysis. This is done through running a PCA analysis and then running a UMAP analysis to obtain a UMAP plot (can also use TSNE, as they both test linear dimensionality to produce a DimPlot). Then, we use FindNeighbors to compute a shared nearest neighbors (SNN) graph, which helps in clustering. 
+```{r}
 mast_cells_cluster <- RunPCA(mast_cells_cluster, dims = 1:30, verbose = FALSE) %>%
   RunTSNE(dims = 1:30, verbose = FALSE) %>%
   FindNeighbors(verbose = TRUE) %>%
@@ -100,23 +100,22 @@ mast_cells_cluster <- RunPCA(mast_cells_cluster, dims = 1:30, verbose = FALSE) %
 
 
 # Saving the Analyzed Cells as a new Seurat Object
-```{r}
 #We have now obtained a seurat object with our required scRNA seq parameters. Save this object using saveRDS(). 
+```{r}
 saveRDS(mast_cells_cluster, "mast_cells_cluster.rds")
 ```
 
 
 
 # Visualizing This Object as a TSNE Dimensional Plot
-```{r}
 #Here's a TSNE plot to exhibit our clustering results:
+```{r}
 TSNEPlot(mast_cells_cluster, group.by = "seurat_clusters")
 ```
 
 
-
-```{r}
 #And a TSNE plot to show the same, grouped by heterogenous donors, and conditions:
+```{r}
 TSNEPlot(mast_cells_cluster, group.by = "Donor")
 ```
 
@@ -126,26 +125,25 @@ TSNEPlot(mast_cells_cluster, group.by = "Condition")
 ```
 
 
-#Finding Markers for Differential Expressed Genes
-```{r include = FALSE}
+# Finding Markers for Differential Expressed Genes
 #Now we need to find marker genes for this processed mast cell cluster object under the 3 clusters identified. Obtaining these marker genes will help us downstream in seeing which genes are expressed when and why. They are called differential expressed genes (DEG).
+```{r include = FALSE}
 Idents(mast_cells_cluster) <- "seurat_clusters"
 mast_cell_markers <-  Seurat::FindAllMarkers(mast_cells_cluster, only.pos = FALSE, test.use = "roc")
 ```
 
 
-
-```{r}
 #Save markers as table.
+```{r}
 write.csv(mast_cell_markers, "mast_cell_markers_clean.csv")
 head(mast_cell_markers_clean)
 ```
 
 
 
-#Classifying DEG Markers Based on Diabetic Conditions:
-```{r}
+# Classifying DEG Markers Based on Diabetic Conditions:
 #Change Idents() to look at differential expressed genes by condition, because we want to view the marker genes we obtained before based on Lean condition (which is non-diabetic), and T2D condition. We ignore Obese group because it contains both diabetic and non-diabetic samples, which has shown to produce discrepancy in results.
+```{r}
 Idents(mast_cells_cluster) <- "Condition"
 levels(mast_cells_cluster)
 ```
@@ -153,16 +151,16 @@ levels(mast_cells_cluster)
 
 
 # Visualizing Such Markers through TSNE Dimensional Plots
-```{r}
 #Let's now view the analysis we've done using TSNEPlot. We first obtain a general plot of all conditions for reference. You can also do this using UMAPPlot or DimPlot.
+```{r}
 TSNEPlot(mast_cells_cluster,group.by = "Condition")
 ```
 
 
 
 # Subsetting Markers into Diabetic Conditions of Interest
-```{r}
 #We further subset the seurat object mast_cells_cluster based on the conditions we want, which are lean and T2D. We then reprocess condition_subset into clusters for accurate visualization.
+```{r}
 mast_cells_cluster@graphs <- list()
 condition_subset <- subset(mast_cells_cluster, idents = c("Lean", "T2D"))
 condition_subset <- RunPCA(condition_subset, dims = 1:30, verbose = FALSE) %>%
@@ -175,22 +173,21 @@ TSNEPlot(condition_subset)+ggtitle("Lean and T2D Conditions")
 
 
 # Finding DEGs Based on these Specific Diabetic Conditions
-```{r}
 #Find DEGs between Lean and T2D conditions. 
+```{r}
 mast_leanvT2D <- Seurat::FindMarkers(mast_cells_cluster, ident.1 = "Lean", ident.2 = "T2D", only.pos = FALSE, test.use = "roc")
 ```
 
-
-```{r}
 #This can be saved both as a CSV (to be downloaded offline and analyzed on Excel) and as a seurat object for later use.
+```{r}
 write.csv(mast_leanvT2D, "mast_leanvT2D.csv")
 saveRDS(mast_leanvT2D, "mast_leanvT2D.rds")
 ```
 
 
-#Organizing DEG Lists based on Average Log Fold Change
-```{r}
+# Organizing DEG Lists based on Average Log Fold Change
 #In this final step, the DEG list we've obtained, mast_leanvT2D, needs to be organized better for easier analysis. We organize it based on average log2FC, because increasing positive log fold change denotes up regulation in genes. We also organize it to remove discrepant genes such as mitchondrial (MT) and ribosome (RP) genes using the function !grep1. 
+```{r}
 mast_leanvT2D$genes <- rownames(mast_leanvT2D)
 mast_leanvT2D <- dplyr::filter(mast_leanvT2D, !grepl("MT-", mast_leanvT2D$genes))
 mast_leanvT2D <- dplyr::filter(mast_leanvT2D, !grepl("RP", mast_leanvT2D$genes))
@@ -201,8 +198,8 @@ head(sorted_mast_leanvT2D)
 ```
 
 # Clean and Organized DEG Tables
-```{r}
 #Save as csv file and export to Excel for further analysis:
+```{r}
 View(sorted_mast_leanvT2D)
 write.csv(sorted_mast_leanvT2D, "sorted_mast_leanvT2D.csv")
 ```
